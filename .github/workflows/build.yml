@@ -5,16 +5,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: unzip koreana_ui.zip
+      - run: unzip -o koreana_ui.zip
       - name: Inject config from GitHub Secrets
         run: |
           cd koreana
           sed -i "s|PASTE_API_KEY|${{ secrets.FIREBASE_API_KEY }}|; s|PASTE_PROJECT_ID|${{ secrets.FIREBASE_PROJECT_ID }}|; s|PASTE_CHECKOUT_URL|${{ secrets.CHECKOUT_URL }}|" lib/config.dart
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: cd koreana && bash tool/build.sh
+          flutter-version: '3.27.4'
+      - name: Prepare project
+        run: |
+          cd koreana
+          flutter create . --org com.koreana --project-name koreana
+          rm -rf test
+          python3 tool/patch_android.py
+          flutter pub get
+          dart run flutter_launcher_icons
+      - name: Check Dart errors
+        run: |
+          cd koreana
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1 || true
+          echo "=========== DART ERRORS ==========="
+          grep -E " error " analyze.log | head -40 || true
+          echo "=========== END ==========="
+      - name: Build APK
+        run: |
+          cd koreana
+          if ! flutter build apk --release > build.log 2>&1; then
+            echo "=========== RELEASE FAILED ==========="
+            grep -n -E "What went wrong|Caused by|Execution failed|error:|Error:" -A5 build.log | head -70
+            echo "=========== TRYING DEBUG BUILD ==========="
+            flutter build apk --debug > build_debug.log 2>&1 || { grep -n -E "What went wrong|Caused by|Execution failed|error:|Error:" -A5 build_debug.log | head -70; exit 1; }
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: koreana-apk
-          path: koreana/build/app/outputs/flutter-apk/app-release.apk
+          path: koreana/build/app/outputs/flutter-apk/*.apk

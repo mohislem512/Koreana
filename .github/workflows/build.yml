@@ -1,0 +1,20 @@
+name: build-apk
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip koreana_ui.zip
+      - name: Inject config from GitHub Secrets
+        run: |
+          cd koreana
+          sed -i "s|PASTE_API_KEY|${{ secrets.FIREBASE_API_KEY }}|; s|PASTE_PROJECT_ID|${{ secrets.FIREBASE_PROJECT_ID }}|; s|PASTE_CHECKOUT_URL|${{ secrets.CHECKOUT_URL }}|" lib/config.dart
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: cd koreana && bash tool/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: koreana-apk
+          path: koreana/build/app/outputs/flutter-apk/app-release.apk

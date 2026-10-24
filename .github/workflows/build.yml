@@ -18,30 +18,8 @@ jobs:
         with:
           channel: stable
           flutter-version: '3.27.4'
-      - name: Prepare project
-        run: |
-          cd koreana
-          flutter create . --org com.koreana --project-name koreana
-          rm -rf test
-          python3 tool/patch_android.py
-          flutter pub get
-          dart run flutter_launcher_icons
-      - name: Check Dart errors
-        run: |
-          cd koreana
-          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1 || true
-          echo "=========== DART ERRORS ==========="
-          grep -E " error " analyze.log | head -40 || true
-          echo "=========== END ==========="
-      - name: Build APK
-        run: |
-          cd koreana
-          if ! flutter build apk --release > build.log 2>&1; then
-            echo "=========== RELEASE FAILED ==========="
-            grep -n -E "What went wrong|Caused by|Execution failed|error:|Error:" -A5 build.log | head -70
-            echo "=========== TRYING DEBUG BUILD ==========="
-            flutter build apk --debug > build_debug.log 2>&1 || { grep -n -E "What went wrong|Caused by|Execution failed|error:|Error:" -A5 build_debug.log | head -70; exit 1; }
-          fi
+      - name: Build
+        run: bash koreana/tool/ci_build.sh
       - uses: actions/upload-artifact@v4
         with:
           name: koreana-apk

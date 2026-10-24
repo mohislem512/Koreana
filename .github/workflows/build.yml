@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: unzip -o koreana_ui.zip
+      - run: ls -la; unzip -o "$(ls *.zip | head -1)"
       - name: Inject config from GitHub Secrets
         run: |
           cd koreana

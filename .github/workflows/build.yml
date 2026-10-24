@@ -17,7 +17,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.4'
       - name: Build
         run: bash koreana/tool/ci_build.sh
       - uses: actions/upload-artifact@v4
